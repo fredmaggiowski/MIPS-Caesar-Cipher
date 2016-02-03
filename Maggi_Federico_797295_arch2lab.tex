@@ -1,0 +1,30 @@
+\documentclass[11pt]{article}
+\usepackage[T1]{fontenc}
+
+\title{Architettura degli Elaboratori II \\ Caesar Cipher}
+\author{Federico Maggi - 797295}
+\date{Febbraio 2016}
+
+\begin{document}
+\maketitle
+\clearpage
+
+\section{Scopo del progetto}
+Scopo del progetto \`e la realizzazione di un cifrario di Cesare che sfrutti la ricorsione per gli algoritmi di cifratura e decifratura.
+
+\section{Interazione con l'utente}
+Una volta avviato, il programma, chieder\`a all'utente di inserire:
+
+\begin{enumerate}
+	\item Un \textbf{codice operativo} per stabilire quale operazione eseguire (cifratura o decifratura);
+	\item Una \textbf{stringa} su cui effettuare l'operazione;
+	\item Un \textbf{numero} utilizzato come chiave.\\Il numero sar\`a considerato in modulo 26 e verr\`a richiesto sia diverso da 0 (con chiave 0, infatti, le operazioni di cifratura e decifratura non sono significative).
+\end{enumerate}
+
+\section{Funzionamento del programma}
+Il programma sar\`a diviso in diverse sezioni, l'\textit{entrypoint} del programma si occuper\`a di gestire le interazioni con l'utente e stabilire l'operazione da effettuare. Le operazioni di cifratura e decifratura saranno effettuate sotto etichette separate e ognuna avr\`a il proprio \textit{core} ricorsivo che si occuper\`a della gestione dello stack da cui prelevare e reinserire la lettera su cui compiere l'operazione desiderata. 
+
+\section{Output del programma}
+Una volta effettuata l'operazione richiesta dall'utente passando dal \textit{core} apposito, il programma stamper\`a a video l'esito.
+
+\end{document}
