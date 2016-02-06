@@ -219,50 +219,52 @@ __ciphercore:
   addi $t1, $a0, 0            
 
   lb $a0, string($a1)
+
   jal __islowercase
   bne $v0, 1, __ciphercoreuppercase
   
-__ciphercorelowercase:
-  beq $s0, 2, __deciphercorelowercase
-  li $t2, 97
-  j __thecipheralgorithm
+  __ciphercorelowercase:
+    beq $s0, 2, __deciphercorelowercase
+    li $t2, 97
+    j __thecipheralgorithm
 
-__deciphercorelowercase:
-  li $t2, 122
-  j __thecipheralgorithm
+  __deciphercorelowercase:
+    li $t2, 122
+    j __thecipheralgorithm
 
-__ciphercoreuppercase:
-  beq $s0, 2, __deciphercoreuppercase
-  li $t2, 65
-  j __thecipheralgorithm
+  __ciphercoreuppercase:
+    beq $s0, 2, __deciphercoreuppercase
+    li $t2, 65
+    j __thecipheralgorithm
 
-__deciphercoreuppercase:
-  li $t2, 90
-  j __thecipheralgorithm
+  __deciphercoreuppercase:
+    li $t2, 90
+    j __thecipheralgorithm
 
-__thecipheralgorithm:    
-  li $t7, 26
-  sub $t3, $a0, $t2
-  add $t3, $t3, $s1
-  div $t3, $t7
-  mfhi $t3
-  add $t3, $t3, $t2 
+  __thecipheralgorithm:    
+    li $t7, 26
+    sub $t3, $a0, $t2
+    add $t3, $t3, $s1
+    div $t3, $t7
+    mfhi $t3
+    add $t3, $t3, $t2 
 
-  sb $t3, 0($a2)
+    sb $t3, 0($a2)
 
-  addi $a0, $t1, 0
-  addi $a1, $a1, 1
-  addi $a2, $a2, 1
-  jal __ciphercore
+  __ciphercorenextchar:
+    addi $a0, $t1, 0
+    addi $a1, $a1, 1
+    addi $a2, $a2, 1
+    jal __ciphercore
 
-__ciphercoreend:
+  __ciphercoreend:
 
-  lw $a0, 0($sp)
-  lw $a1, 4($sp)
-  lw $a2, 8($sp)
-  lw $ra, 12($sp)
-  addi $sp, $sp, 16
-  jr $ra
+    lw $a0, 0($sp)
+    lw $a1, 4($sp)
+    lw $a2, 8($sp)
+    lw $ra, 12($sp)
+    addi $sp, $sp, 16
+    jr $ra
 
 # =================================================
 # strLen
@@ -270,7 +272,7 @@ __ciphercoreend:
 # La procedura conta la lunghezza della stringa e 
 # ne esegue la validazione scartando le stringhe 
 # che dovessero contenere caratteri che non siano
-# lettere in [a-zA-Z]
+# lettere in [a-zA-Z\\s]
 #
 # Parametri
 #   $a0 <- indirizzo della stringa da misurare
@@ -296,8 +298,8 @@ __strlen:
     beq $t1, $t3 __strlenexit # $t1 = \n  ?
 
     addi $a0, $t1, 0          # $a0 <- Carattere corrente
-    jal __isaletter           # Restituisce 1 se 
-    bne $v0, 1, __strlenerror # il carattere inserito è una lettera valida
+    jal __isavalidchar        # Restituisce 1 se 
+    bne $v0, 1, __strlenerror # il carattere inserito è valido
 
     addi $t2, $t2, 1
     addi $t0, $t0, 1
@@ -319,10 +321,46 @@ __strlen:
 
     li $v0, 4
     la $a0, errstrprompt
-    syscall    
+    syscall
 
     li $v0, -1
     li $v1, -1
+    jr $ra
+
+# =================================================
+# isAChar
+#
+# Parametri
+#   $a0 <- Carattere da testare
+#
+# Valori di ritorno
+#   $v0 <- 1: è un carattere valido
+#          0: non è un carattere valido
+# =================================================
+__isavalidchar:
+  addi $sp, $sp, -8
+  sw $a0, 0($sp)
+  sw $ra, 4($sp)
+
+  jal __isaletter
+  beq $v0, 1, __validcharfound
+
+  jal __isaspace
+  beq $v0, 1, __validcharfound
+
+  lw $a0, 0($sp)
+  lw $ra, 4($sp)
+  addi $sp, $sp, 8
+
+  li $v0, 0
+  jr $ra
+
+  __validcharfound:
+    lw $a0, 0($sp)
+    lw $ra, 4($sp)
+    addi $sp, $sp, 8
+
+    li $v0, 1
     jr $ra
 
 # =================================================
@@ -362,6 +400,26 @@ __isaletter:
     addi $sp, $sp, 8
 
     li $v0, 1
+    jr $ra
+
+# =================================================
+# isASpace
+#
+# Parametri
+#   $a0 <- Carattere da testare
+#
+# Valori di ritorno
+#   $v0 <- 1: è uno spazio
+#          0: non è uno spazio
+# =================================================
+__isaspace:
+  bne $a0, 32, __isnotaspace
+  
+  li $v0, 1
+  jr $ra
+
+  __isnotaspace:
+    li $v0, 0
     jr $ra
 
 # =================================================
