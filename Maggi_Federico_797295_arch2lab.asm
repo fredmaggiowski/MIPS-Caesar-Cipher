@@ -12,17 +12,19 @@
 #   $s3 -> indirizzo stringa risultato
 #
 .data
-opprompt:   .asciiz "Quale operazione vuoi fare? (1: cifra - 2: decifra - 0: esci)\n> "
-keyprompt:  .asciiz "Inserisci la chiave (deve essere maggiore di 0):\n> "
-opcprompt:  .asciiz "CIFRO CON CHIAVE: "
-opdprompt:  .asciiz "DECIFRO CON CHIAVE: "
-txtprompt:  .asciiz "Inserisci il testo:\n> "
-resprompt:  .asciiz "Risultato:\n"
-conprompt:  .asciiz "Premi '1' per continuare:\n> "
-byeprompt:  .asciiz "Arrivederci!\n"
-endl:       .asciiz "\n"
+opprompt:     .asciiz "Quale operazione vuoi fare? (1: cifra - 2: decifra - 0: esci)\n> "
+keyprompt:    .asciiz "Inserisci la chiave (deve essere maggiore di 0):\n> "
+opcprompt:    .asciiz "CIFRO CON CHIAVE: "
+opdprompt:    .asciiz "DECIFRO CON CHIAVE: "
+txtprompt:    .asciiz "Inserisci il testo:\n> "
+resprompt:    .asciiz "Risultato:\n"
+conprompt:    .asciiz "Premi '1' per continuare:\n> "
+byeprompt:    .asciiz "Arrivederci!\n"
+errstrprompt: .asciiz "Stringa non valida!\n"
+errkeyprompt: .asciiz "Chiave non valida!\n"
+endl:         .asciiz "\n"
 
-string:     .space 256
+string:       .space 256
 
 .globl main
 
@@ -30,7 +32,7 @@ string:     .space 256
 
 main:                           # Legge l'operazione da eseguire
   li $v0, 4
-  la $a0, opprompt             
+  la $a0, opprompt
   syscall
 
   li $v0, 5
@@ -315,6 +317,11 @@ __strlen:
     lw $ra, 4($sp)
     addi $sp, $sp, 8
 
+    li $v0, 4
+    la $a0, errstrprompt
+    syscall    
+
+    li $v0, -1
     li $v1, -1
     jr $ra
 
