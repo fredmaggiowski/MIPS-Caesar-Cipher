@@ -81,7 +81,7 @@ __stringok:
 
 __allocation:
   li $v0,9                      # Alloca un'area di memoria
-  addi $a0, $s2, 0              # per salvare la stringa computata
+  addi $a0, $s2, 1              # per salvare la stringa computata
   syscall
 
   addi $s3, $v0, 0
@@ -189,13 +189,8 @@ __exit:                         # Stampa messaggio di saluto ed esce
 #       l = rappresentazione ASCII del carattere di offset
 #       k = chiave di cifratura
 #
-#   Il carattere di offset è:
-#     Durante la Cifratura:
-#       'a': se la lettera è minuscola
-#       'A': se la lettera è maiuscola
-#     Durante la Decifratura:
-#       'z': se la lettera è minuscola
-#       'Z': se la lettera è maiuscola
+#   Per informazioni sull'offset cfr:
+#       __getcharoffset
 #
 # Parametri
 #   $a0 <- Lunghezza della stringa
@@ -213,6 +208,9 @@ __ciphercore:
   sw $a2, 8($sp)                #   Indirizzo stringa risultato
   sw $ra, 12($sp)               #   Return Address
 
+  li $t5, 0                     # Scrivo il carattere di fine stringa \0
+  sb $t5, 0($a2)                # nella posizione attuale.
+
   bge $a1, $a0, __ciphercoreend
 
   ## CIPHER CHARACTER
@@ -220,34 +218,19 @@ __ciphercore:
 
   lb $a0, string($a1)
 
-  jal __islowercase
-  bne $v0, 1, __ciphercoreuppercase
-  
-  __ciphercorelowercase:
-    beq $s0, 2, __deciphercorelowercase
-    li $t2, 97
-    j __thecipheralgorithm
+  jal __isaspace
+  beq $v0, 1, __ciphercoreisspace
 
-  __deciphercorelowercase:
-    li $t2, 122
-    j __thecipheralgorithm
+  jal __getcharoffset           # La procedura restituisce l'offset in $v0
+  addi $t2, $v0, 0              # $t2 <- offset
 
-  __ciphercoreuppercase:
-    beq $s0, 2, __deciphercoreuppercase
-    li $t2, 65
-    j __thecipheralgorithm
-
-  __deciphercoreuppercase:
-    li $t2, 90
-    j __thecipheralgorithm
-
-  __thecipheralgorithm:    
-    li $t7, 26
-    sub $t3, $a0, $t2
-    add $t3, $t3, $s1
-    div $t3, $t7
+  __thecipheralgorithm:
+    li $t7, 26                  # $t7 <- modulus
+    sub $t3, $a0, $t2           # $t3 = lettera - offset
+    add $t3, $t3, $s1           # $t3 += key
+    div $t3, $t7                # $t3 % modulus (26)
     mfhi $t3
-    add $t3, $t3, $t2 
+    add $t3, $t3, $t2           # $t3 += offset
 
     sb $t3, 0($a2)
 
@@ -266,6 +249,62 @@ __ciphercore:
     addi $sp, $sp, 16
     jr $ra
 
+  __ciphercoreisspace:
+    li $t5, 32
+    sb $t5, 0($a2)
+    j __ciphercorenextchar
+
+# =================================================
+# getCharOffset
+#
+# Restituisce l'offset corretto per eseguire le
+# operazioni di cifratura e decifratura.
+#
+#   L'offset è:
+#     Durante la Cifratura:
+#       'a': se la lettera è minuscola
+#       'A': se la lettera è maiuscola
+#     Durante la Decifratura:
+#       'z': se la lettera è minuscola
+#       'Z': se la lettera è maiuscola
+#
+# Parametri
+#   $a0 <- lettera da verificare
+#
+# Valori di ritorno
+#   $v0 <- offset da utilizzare per la lettera
+# =================================================
+__getcharoffset:
+  addi $sp, $sp, -8
+  sw $a0, 0($sp)
+  sw $ra, 4($sp)
+  
+  jal __islowercase
+
+  lw $a0, 0($sp)
+  lw $ra, 4($sp)
+  addi $sp, $sp, 8
+
+  bne $v0, 1, __ciphercoreuppercase
+  
+  __ciphercorelowercase:
+    beq $s0, 2, __deciphercorelowercase
+    li $v0, 97
+    jr $ra
+
+  __deciphercorelowercase:
+    li $v0, 122
+    jr $ra
+
+  __ciphercoreuppercase:
+    beq $s0, 2, __deciphercoreuppercase
+    li $v0, 65
+    jr $ra
+
+  __deciphercoreuppercase:
+    li $v0, 90
+    jr $ra
+
 # =================================================
 # strLen
 #
@@ -282,7 +321,6 @@ __ciphercore:
 #   $v1 <- errore (-1/0)
 # =================================================
 __strlen:
-
   addi $sp, $sp, -8
   sw $a0, 0($sp)
   sw $ra, 4($sp)
