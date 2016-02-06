@@ -174,20 +174,26 @@ __exit:                         # Stampa messaggio di saluto ed esce
 ##################
 
 # =================================================
-# CipherCore
+# cipherCore
 #
 # NOTA:
 #   L'algoritmo di cifratura è il seguente:
 #     c = ((p - l) + k) % 26) + l
-#
 #     p = ((c - l) - k) % 26) + l
 #
 #   Dove:
 #       c = ciphertext
 #       p = plaintext
-#       l = codice ASCII del carattere 'a'/'z' o 'A'/'Z'
-#           a seconda che p sia maiuscola o minuscola
+#       l = rappresentazione ASCII del carattere di offset
 #       k = chiave di cifratura
+#
+#   Il carattere di offset è:
+#     Durante la Cifratura:
+#       'a': se la lettera è minuscola
+#       'A': se la lettera è maiuscola
+#     Durante la Decifratura:
+#       'z': se la lettera è minuscola
+#       'Z': se la lettera è maiuscola
 #
 # Parametri
 #   $a0 <- Lunghezza della stringa
@@ -257,6 +263,13 @@ __ciphercoreend:
   jr $ra
 
 # =================================================
+# strLen
+#
+# La procedura conta la lunghezza della stringa e 
+# ne esegue la validazione scartando le stringhe 
+# che dovessero contenere caratteri che non siano
+# lettere in [a-zA-Z]
+#
 # Parametri
 #   $a0 <- indirizzo della stringa da misurare
 #
@@ -306,6 +319,8 @@ __strlen:
     jr $ra
 
 # =================================================
+# isALetter
+#
 # Parametri
 #   $a0 <- Carattere da testare
 #
@@ -343,6 +358,8 @@ __isaletter:
     jr $ra
 
 # =================================================
+# isLowerCase
+#
 # Parametri
 #   $a0 <- Carattere da testare
 #
@@ -365,6 +382,8 @@ __islowercase:
     jr $ra
 
 # =================================================
+# isUpperCase
+#
 # Parametri
 #   $a0 <- Carattere da testare
 #
