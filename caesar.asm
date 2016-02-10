@@ -1,27 +1,27 @@
 # ===========================================
-# Federico Maggi - 797295
-# Progetto Architetture degli Elaborati II
+# Federico Maggi
+# MIPS Caesar Cipher
 # ===========================================
 #
 # Recursive MIPS Ceasar Cipher 
 # 
 # Main:
-#   $s0 -> operazione
-#   $s1 -> chiave
-#   $s2 -> lunghezza stringa
-#   $s3 -> indirizzo stringa risultato
+#   $s0 -> Operation
+#   $s1 -> Key
+#   $s2 -> String length
+#   $s3 -> Computed string address
 #
 .data
-opprompt:     .asciiz "Quale operazione vuoi fare? (1: cifra - 2: decifra - 0: esci)\n> "
-keyprompt:    .asciiz "Inserisci la chiave (deve essere maggiore di 0):\n> "
-opcprompt:    .asciiz "CIFRO CON CHIAVE: "
-opdprompt:    .asciiz "DECIFRO CON CHIAVE: "
-txtprompt:    .asciiz "Inserisci il testo:\n> "
-resprompt:    .asciiz "Risultato:\n"
-conprompt:    .asciiz "Premi '1' per continuare:\n> "
-byeprompt:    .asciiz "Arrivederci!\n"
-errstrprompt: .asciiz "Stringa non valida!\n"
-errkeyprompt: .asciiz "Chiave non valida!\n"
+opprompt:     .asciiz "Choose the operation? (1: cipher - 2: decipher - 0: exit)\n> "
+keyprompt:    .asciiz "Insert key (must be greated than 0):\n> "
+opcprompt:    .asciiz "Ciphering with key: "
+opdprompt:    .asciiz "Deciphering with key: "
+txtprompt:    .asciiz "Insert the text:\n> "
+resprompt:    .asciiz "Result:\n"
+conprompt:    .asciiz "Press '1' to continue:\n> "
+byeprompt:    .asciiz "Goodbye!\n"
+errstrprompt: .asciiz "Invalid string!\n"
+errkeyprompt: .asciiz "Invalid Key!\n"
 endl:         .asciiz "\n"
 
 string:       .space 256
@@ -30,37 +30,37 @@ string:       .space 256
 
 .text
 
-main:                           # Legge l'operazione da eseguire
+main:                           
   li $v0, 4
   la $a0, opprompt
   syscall
 
-  li $v0, 5
+  li $v0, 5                     # Reads the operation to do
   syscall
 
   beq $v0, $zero, __exit        # OP = 0 -> EXIT
   bltz $v0, main                # OP < 0 -> MAIN
   bgt $v0, 2, main              # OP > 2 -> MAIN
 
-  addi $s0, $v0, 0              # Salva in $s0 l'operazione da eseguire
+  addi $s0, $v0, 0              # Save in $s0 the operation
 
-__keyask:                       # Legge la chiave
-  li $v0, 4                     #   NOTA: La chiave deve essere diversa da 0   
-  la $a0, keyprompt             #         inoltre viene ridotta in modulo 26
-  syscall                       #         cifrare con chiave 1 o chiave 27 porta allo stesso risultato
+__keyask:                       # Read key
+  li $v0, 4                     #   NOTE: The key must not be equal to 0  
+  la $a0, keyprompt             #         it is reduced in modulus 26
+  syscall
 
   li $v0, 5
   syscall
 
-  li $t0, 26                    # Salva nel registro il valore del modulo
+  li $t0, 26                    # Save in $t0 modulus value
   div $v0, $t0
   mfhi $t1                      # $t1 <- $v0 % 26
 
   beqz $t1, __keyask
   blt $t1, $0, __keyask
-  addi $s1, $t1, 0              # Salva in $s1 la chiave
+  addi $s1, $t1, 0              # Save the key in $s1
 
-__stringask:                    # Legge la stringa da manipolare
+__stringask:                    # Read the string to manipulate
   li $v0, 4
   la $a0, txtprompt
   syscall
@@ -77,11 +77,11 @@ __stringask:                    # Legge la stringa da manipolare
   j __stringask
 
 __stringok:
-  addi $s2, $v0, 0              # $s2 <- strlen( stringa )
+  addi $s2, $v0, 0              # $s2 <- strlen( string )
 
 __allocation:
-  li $v0,9                      # Alloca un'area di memoria
-  addi $a0, $s2, 1              # per salvare la stringa computata
+  li $v0,9                      # Allocate a memory buffer
+  addi $a0, $s2, 1              # to save the computed string
   syscall
 
   addi $s3, $v0, 0
@@ -91,11 +91,9 @@ __opselect:
   beq $s0, 2, __decipherprompt
   j main
 
-__decipherprompt:               # Stampa che stiamo per decifrare con chiave $s1
-
-  ## Calcola il complementare della chiave per la decifratura
-  add $t0, $s1, $s1
-  sub $s1, $s1, $t0
+__decipherprompt:
+  add $t0, $s1, $s1             # This calculate the opposite
+  sub $s1, $s1, $t0             # of the key
 
   li $v0, 4
   la $a0, opdprompt
@@ -111,7 +109,7 @@ __decipherprompt:               # Stampa che stiamo per decifrare con chiave $s1
 
   j __invokecipher
 
-__cipherprompt:                 # Stampa la chiave di cifratura in $s1
+__cipherprompt:
   li $v0, 4
   la $a0, opcprompt
   syscall
@@ -124,15 +122,15 @@ __cipherprompt:                 # Stampa la chiave di cifratura in $s1
   la $a0, endl
   syscall
 
-__invokecipher:                 # Invoca la procedura di cifratura con i parametri:
-  addi $a0, $s2, 0              #   $a0 <- Lunghezza della stringa
-  li $a1, 0                     #   $a1 <- Indice corrente (inizia da 0)
-  addi $a2, $s3, 0              #   $a2 <- Indirizzo stringa risultato
+__invokecipher:                 # Invoke the cipher procedure with paramethers:
+  addi $a0, $s2, 0              #   $a0 <- String length
+  li $a1, 0                     #   $a1 <- Current index
+  addi $a2, $s3, 0              #   $a2 <- Result string address
   jal __ciphercore
 
   j __done
 
-__done:                         # Stampa il risultato dell'operazione
+__done:                         # Print result
   li $v0, 4
   la $a0, resprompt
   syscall
@@ -148,22 +146,22 @@ __done:                         # Stampa il risultato dell'operazione
   la $a0, endl
   syscall
 
-  li $v0, 4                     # Stampo richiesta per continuare
+  li $v0, 4                     # Print "continue" request
   la $a0, conprompt
   syscall
 
-  li $v0, 5                     # Leggo risposta
+  li $v0, 5                     # Read reply
   syscall
 
-  addi $t0, $v0, 0              # $t0 <- risposta
+  addi $t0, $v0, 0              # $t0 <- reply
 
-  li $v0, 4                     # Stampo un \n
+  li $v0, 4                     # Print a \n
   la $a0, endl
   syscall
 
-  beq $t0, 1, main              # $t0 != 1 -> esci
+  beq $t0, 1, main              # $t0 != 1 -> EXIT
 
-__exit:                         # Stampa messaggio di saluto ed esce
+__exit:                         # Print goodbye message and exit
   li $v0, 4
   la $a0, byeprompt
   syscall
@@ -179,37 +177,37 @@ __exit:                         # Stampa messaggio di saluto ed esce
 # cipherCore
 #
 # NOTA:
-#   L'algoritmo di cifratura è il seguente:
+#   The cipher algorithm is the following:
 #     c = ((p - l) + k) % 26) + l
 #     p = ((c - l) - k) % 26) + l
 #
 #   Dove:
 #       c = ciphertext
 #       p = plaintext
-#       l = rappresentazione ASCII del carattere di offset
-#       k = chiave di cifratura
+#       l = ASCII offset character
+#       k = key
 #
-#   Per informazioni sull'offset cfr:
+#   For information about the offset character cfr:
 #       __getcharoffset
 #
-# Parametri
-#   $a0 <- Lunghezza della stringa
-#   $a1 <- Indice corrente
-#   $a2 <- Indirizzo della stringa risultato
+# Paramethers:
+#   $a0 <- String length
+#   $a1 <- Current index
+#   $a2 <- Result string address
 #
-# Valori di ritorno
-#   $v0 <- lunghezza della stringa
-#   $v1 <- errore (-1/0)
+# Return values
+#   $v0 <- String length
+#   $v1 <- error (-1/0)
 # =================================================
 __ciphercore:  
-  addi $sp, $sp -16             # Salva:
-  sw $a0, 0($sp)                #   Lunghezza della stringa
-  sw $a1, 4($sp)                #   Indice corrente
-  sw $a2, 8($sp)                #   Indirizzo stringa risultato
+  addi $sp, $sp -16             # Save:
+  sw $a0, 0($sp)                #   String length
+  sw $a1, 4($sp)                #   Current index
+  sw $a2, 8($sp)                #   Result strin address
   sw $ra, 12($sp)               #   Return Address
 
-  li $t5, 0                     # Scrivo il carattere di fine stringa \0
-  sb $t5, 0($a2)                # nella posizione attuale.
+  li $t5, 0                     # write the end strin character \0
+  sb $t5, 0($a2)                # in current position.
 
   bge $a1, $a0, __ciphercoreend
 
@@ -221,12 +219,12 @@ __ciphercore:
   jal __isaspace
   beq $v0, 1, __ciphercoreisspace
 
-  jal __getcharoffset           # La procedura restituisce l'offset in $v0
+  jal __getcharoffset           # this procedure returns the offset in $v0
   addi $t2, $v0, 0              # $t2 <- offset
 
   __thecipheralgorithm:
     li $t7, 26                  # $t7 <- modulus
-    sub $t3, $a0, $t2           # $t3 = lettera - offset
+    sub $t3, $a0, $t2           # $t3 = Char - offset
     add $t3, $t3, $s1           # $t3 += key
     div $t3, $t7                # $t3 % modulus (26)
     mfhi $t3
@@ -257,22 +255,22 @@ __ciphercore:
 # =================================================
 # getCharOffset
 #
-# Restituisce l'offset corretto per eseguire le
-# operazioni di cifratura e decifratura.
+# Returns the right offset to execute
+# cipher and decipher operation
 #
-#   L'offset è:
-#     Durante la Cifratura:
-#       'a': se la lettera è minuscola
-#       'A': se la lettera è maiuscola
-#     Durante la Decifratura:
-#       'z': se la lettera è minuscola
-#       'Z': se la lettera è maiuscola
+#   The'offset is:
+#     During cipher:
+#       'a': if the char is lowercase
+#       'A': if the char is uppercase
+#     During decipher:
+#       'z': if the char is lowercase
+#       'Z': if the char is uppercase
 #
-# Parametri
-#   $a0 <- lettera da verificare
+# Paramether:
+#   $a0 <- Character to test
 #
-# Valori di ritorno
-#   $v0 <- offset da utilizzare per la lettera
+# Return:
+#   $v0 <- offset
 # =================================================
 __getcharoffset:
   addi $sp, $sp, -8
@@ -308,17 +306,16 @@ __getcharoffset:
 # =================================================
 # strLen
 #
-# La procedura conta la lunghezza della stringa e 
-# ne esegue la validazione scartando le stringhe 
-# che dovessero contenere caratteri che non siano
-# lettere in [a-zA-Z\\s]
+# The procedure counts the string length and 
+# validates it. A valid string must not contain
+# any character apart from letters and spaces
 #
-# Parametri
-#   $a0 <- indirizzo della stringa da misurare
+# Paramether;
+#   $a0 <- string to validate
 #
-# Valori di ritorno
-#   $v0 <- lunghezza della stringa
-#   $v1 <- errore (-1/0)
+# Return:
+#   $v0 <- string length
+#   $v1 <- error (-1/0)
 # =================================================
 __strlen:
   addi $sp, $sp, -8
@@ -335,9 +332,9 @@ __strlen:
     beqz $t1, __strlenexit    # $t1 = \00 ?
     beq $t1, $t3 __strlenexit # $t1 = \n  ?
 
-    addi $a0, $t1, 0          # $a0 <- Carattere corrente
-    jal __isavalidchar        # Restituisce 1 se 
-    bne $v0, 1, __strlenerror # il carattere inserito è valido
+    addi $a0, $t1, 0          # $a0 <- Currenct char
+    jal __isavalidchar        # returns 1 if it's valid
+    bne $v0, 1, __strlenerror
 
     addi $t2, $t2, 1
     addi $t0, $t0, 1
@@ -368,12 +365,12 @@ __strlen:
 # =================================================
 # isAChar
 #
-# Parametri
-#   $a0 <- Carattere da testare
+# Paramether
+#   $a0 <- Character to test
 #
-# Valori di ritorno
-#   $v0 <- 1: è un carattere valido
-#          0: non è un carattere valido
+# Returns:
+#   $v0 <- 1: valid char
+#          0: not valid char
 # =================================================
 __isavalidchar:
   addi $sp, $sp, -8
@@ -404,12 +401,12 @@ __isavalidchar:
 # =================================================
 # isALetter
 #
-# Parametri
-#   $a0 <- Carattere da testare
+# Paramether:
+#   $a0 <- Character to test
 #
-# Valori di ritorno
-#   $v0 <- 1: è una lettera
-#          0: non è una lettera
+# Returns:
+#   $v0 <- 1: is a letter
+#          0: not a letter
 # =================================================
 __isaletter:
   addi $sp, $sp, -8
@@ -443,12 +440,12 @@ __isaletter:
 # =================================================
 # isASpace
 #
-# Parametri
-#   $a0 <- Carattere da testare
+# Paramether
+#   $a0 <- Char to test
 #
-# Valori di ritorno
-#   $v0 <- 1: è uno spazio
-#          0: non è uno spazio
+# Returns
+#   $v0 <- 1: is a space
+#          0: not a space
 # =================================================
 __isaspace:
   bne $a0, 32, __isnotaspace
@@ -463,13 +460,13 @@ __isaspace:
 # =================================================
 # isLowerCase
 #
-# Parametri
-#   $a0 <- Carattere da testare
+# Paramether
+#   $a0 <- Char to test
 #
-# Valori di ritorno
-#   $v0 <- 1: è lowercase
-#          0: non è una lowercase
-#         -1: non è una lettera
+# Return
+#   $v0 <- 1: is lowercase
+#          0: not lowercase
+#         -1: not a letter
 # =================================================
 __islowercase:
   blt $a0, 97, __isnotlowercase
@@ -487,13 +484,13 @@ __islowercase:
 # =================================================
 # isUpperCase
 #
-# Parametri
-#   $a0 <- Carattere da testare
+# Paramether
+#   $a0 <- character to test
 #
-# Valori di ritorno
-#   $v0 <- 1: è uppercase
-#          0: non è una uppercase
-#         -1: non è una lettera
+# Returns
+#   $v0 <- 1: is uppercase
+#          0: not uppercase
+#         -1: not a letter
 # =================================================
 __isuppercase:
   blt $a0, 65, __isuppercaseerror
